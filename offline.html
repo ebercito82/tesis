@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>IndexedBD: Local Database with HTML5</title>
+	<script type="text/javascript">
+		var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+		//COMPATIBILIDAD CON LOS DEMAS NAVEGADORES
+		var dataBase=null;
+		function startDB(){
+			dataBase= indexedDB.open("object",1);//CREAMOS LA BASE DE DATO Y SI EXISTE SE CONECTA
+			
+			dataBase.onupgradeneeded=function(e){
+				var active=dataBase.result;//recuperamos la conexion				
+				var object = active.createObjectStore('people',{keyPath:'id', autoIncrement:true });//recibe dos parametros el nombre de la tabla y Sel objeto
+				object.createIndex('by_name','name',{unique:false});//creamos el campo name indicando que no es unico
+				object.createIndex('by_dni','dni',{unique:true});//creamos el campo dni indicando que no es unico
+			};
+			dataBase.onsuccess=function (e){//si todo esta bien al cargar la base de datos se envia un mensaje
+				alert('Database cargada');
+
+			};
+			dataBase.onerror=function (e){
+				alert('Error al cargar la base de datos');
+			};
+		}
+		function add(){//insertar informacion en la tabla, se ocupa transacciones
+			var active = dataBase.result; //recupera los datos de conexion
+			var data = active.transaction(["people"],"readwrite");//la transaccion recibe dos parametros el almacen osease la tabla, podemos mencionar dos almacenes ["people","otros"] el segundo es el modo de la transaccion modo readonly (consultar la transaccion) readwrite(insertar datos)
+			var object = data.objectStore("people");//se indica todo el tiempo los almacenes, guardamos en una variable
+			var request = object.put({//es la opcion insert into en Mysql almacenamos todo en la variable request para controlar cualquier tipo de error
+				dni:document.querySelector("#dni").value,//guardamos en el campo dni
+				name:document.querySelector("#name").value,
+				surname:document.querySelector("#surname").value
+			});
+			request.onerror=function(e){//si se produce un error a la hora de insertar nuestro objeto
+				alert(request.error.name+'\n\n'+ request.error.message);
+			}
+			data.oncomplete=function(e){ //hacemos referencia a las transacciones 
+				document.querySelector('#dni').value='';
+				document.querySelector('#name').value='';
+				document.querySelector('#surname').value='';
+				alert('Object successfully added');
+			}
+		}
+
+
+	</script>	
+</head>
+<body onload="startDB();">
+	<input type="text" id="dni" placeholder="Enter DNI"/>
+	<input type="text" id="name" placeholder="Enter name"/>
+	<input type="text" id="surname" placeholder="Enter surname"/>
+	<button type="button" onclick="add();">Save</button>
+</body>
+</html>
